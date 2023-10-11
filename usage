@@ -7,8 +7,15 @@ def example_distance_func(data1, data2):
 model = SparkKMedoids(n_clusters=5, dist_func=example_distance_func, sc=sc)
 model.fit(rdd)
 
+#spark rdd functionality
 labeled_rdd = model.labeled_rdd_.map(lambda x: (x[0], x[1]))
-labeled_df = spark.createDataFrame(labeled_rdd, ["medoid"])
+labeled_df = spark.createDataFrame(labeled_rdd, ["id"])
 labeled_df = labeled_df.withColumn("row_index", monotonically_increasing_id())
 
 result_df = df.join(labeled_df, "row_index")
+
+#for a simpler data structure
+for col_name in result_df.columns:
+    col_type = result_df.schema[col_name].dataType
+    if isinstance(col_type, (ArrayType,)):
+        result_df = result_df.withColumn(col_name, array_to_string(col(col_name)))
