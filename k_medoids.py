@@ -1,7 +1,3 @@
-'''
-Light Weight K-Medoids Spark Implementation by Chus
-'''
-
 from pyspark import SparkContext, RDD
 from pyspark.sql import SparkSession
 import numpy as np
@@ -90,21 +86,3 @@ class SparkKMedoids:
         raise NotImplementedError()
         
 
-    '''
-    Main API of KMedoids Clustering
-
-    Parameters
-    --------
-        n_clusters: number of clusters
-        dist_func : distance function
-        max_iter: maximum number of iterations
-        tol: tolerance
-
-
-    Methods
-    -------
-        fit(X): fit the model
-            - X: 2-D numpy array, size = (n_sample, n_features)
-
-        predict(X): predict cluster id given a test dataset.
-    '''
