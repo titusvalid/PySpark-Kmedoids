@@ -1,0 +1,14 @@
+from k_medoids import SparkKMedoids 
+
+def example_distance_func(data1, data2):
+    return np.sqrt(np.sum((data1 - data2)**2))
+
+
+model = SparkKMedoids(n_clusters=5, dist_func=example_distance_func, sc=sc)
+model.fit(rdd)
+
+labeled_rdd = model.labeled_rdd_.map(lambda x: (x[0], x[1]))
+labeled_df = spark.createDataFrame(labeled_rdd, ["medoid"])
+labeled_df = labeled_df.withColumn("row_index", monotonically_increasing_id())
+
+result_df = df.join(labeled_df, "row_index")
