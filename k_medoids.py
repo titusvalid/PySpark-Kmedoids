@@ -1,6 +1,3 @@
-'''
-Light Weight K-Medoids Spark Implementation by Chus
-'''
 
 from pyspark import SparkContext, RDD
 from pyspark.sql import SparkSession
@@ -29,8 +26,7 @@ def kmedoids_run_spark(rdd: RDD, n_clusters, dist_func, max_iter, tol, sc=None):
     n_samples = indexed_rdd.count()
     print(f"Debug: Number of samples: {n_samples}")
     
-    step = n_samples // n_clusters
-    centers_idx = [step * i for i in range(n_clusters)]
+    centers_idx = np.random.choice(n_samples, n_clusters, replace=False).tolist()
     print(f"Debug: Initial Center indices: {centers_idx}")
 
     centers_data = indexed_rdd.filter(lambda x: x[0] in centers_idx).collect()
@@ -43,11 +39,19 @@ def kmedoids_run_spark(rdd: RDD, n_clusters, dist_func, max_iter, tol, sc=None):
         print(f"Debug: Iteration {current_iter} of {max_iter}")
 
         cost_rdd = indexed_rdd.map(lambda x: (x[0], min([(i, dist_func(x[1], center)) for i, center in enumerate(broadcast_centers.value)], key=lambda t: t[1])))
-        sample_data = indexed_rdd.takeSample(False, 5)  # Take 5 random samples
+        sample_data = indexed_rdd.takeSample(False, 100)  # Take X random samples
+        
+        all_distances = []
         for idx, data in sample_data:
             distances = [dist_func(data, center) for center in broadcast_centers.value]
-            print(f"Debug: Sample {idx} distances to centers: {distances}")
+            all_distances.extend(distances)
+
+        min_distance = min(all_distances)
+        max_distance = max(all_distances)
+        avg_distance = sum(all_distances) / len(all_distances)
         
+        print(f"Debug: Min: {min_distance}, Max: {max_distance}, Avg: {avg_distance}")
+
         new_centers_data = []
         for i in range(n_clusters):
             cluster_rdd = cost_rdd.filter(lambda x: x[1][0] == i).map(lambda x: x[0])
@@ -79,8 +83,8 @@ def kmedoids_run_spark(rdd: RDD, n_clusters, dist_func, max_iter, tol, sc=None):
 
 
 class SparkKMedoids:
-    #set your own tolerance and iteration
-    def __init__(self, n_clusters, dist_func=example_distance_func, max_iter=25, tol=0.1, sc=None):
+    #set your own tolerance and iteration, at 6-8 starts looping, 0.6-0.99 meaningful  tolerance,
+    def __init__(self, n_clusters, dist_func=example_distance_func, max_iter=3, tol=0.99, sc=None):
         print("SparkKMedoids")
         self.n_clusters = n_clusters
         self.dist_func = dist_func
@@ -95,22 +99,3 @@ class SparkKMedoids:
     def predict(self, df, feature_col="features"):
         raise NotImplementedError()
         
-
-    '''
-    Main API of KMedoids Clustering
-
-    Parameters
-    --------
-        n_clusters: number of clusters
-        dist_func : distance function
-        max_iter: maximum number of iterations
-        tol: tolerance
-
-
-    Methods
-    -------
-        fit(X): fit the model
-            - X: 2-D numpy array, size = (n_sample, n_features)
-
-        predict(X): predict cluster id given a test dataset.
-    '''
