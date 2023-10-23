@@ -4,7 +4,7 @@ def example_distance_func(data1, data2):
     return np.sqrt(np.sum((data1 - data2)**2))
 
 
-model = SparkKMedoids(n_clusters=5, dist_func=example_distance_func, sc=sc)
+model = SparkKMedoids(n_clusters=3, dist_func=exact_match_distance, max_iter=10, tol=0.1, sc=sc)
 model.fit(rdd)
 
 #spark rdd functionality
